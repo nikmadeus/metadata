@@ -1,5 +1,4 @@
 from custom_minidom import *
-from codecs import open as openfile
 
 
 def assembly_attributes(db_elem, dom_elem):  # сборка аттрибутов
