@@ -18,7 +18,7 @@ class Schema:
 
     def validating(self):
         if self.__getattribute__('name') is None:
-            raise custom_exceptions.EmptyRequiredPropertyError('The schema name is not defined')
+            raise custom_exceptions.PropertyError('The schema name is not defined')
 
 
 class Domain:
@@ -45,9 +45,9 @@ class Domain:
 
     def validating(self):
         if self.__getattribute__('name') is None:
-            raise custom_exceptions.EmptyRequiredPropertyError('The domain name is not defined')
+            raise custom_exceptions.PropertyError('The domain name is not defined')
         if self.__getattribute__('type') is None:
-            raise custom_exceptions.EmptyRequiredPropertyError('The domain type is not defined ' + str(self.__getattribute__('name')))
+            raise custom_exceptions.PropertyError('The domain type is not defined ' + str(self.__getattribute__('name')))
         if self.__getattribute__('type') not in self.schema.data_types:
             raise custom_exceptions.UnsupportedDataTypeError('Domain type is not correct ' + str(self.__getattribute__('name')))
         if self.__getattribute__('name') in self.schema.domains.keys():
@@ -72,7 +72,7 @@ class Table:
 
     def validating(self):
         if self.__getattribute__('name') is None:
-            raise custom_exceptions.EmptyRequiredPropertyError('The table name is not defined')
+            raise custom_exceptions.PropertyError('The table name is not defined')
         if self.__getattribute__('name') in self.schema.tables:
             raise custom_exceptions.UniqueViolationError('Table ' + str(self.__getattribute__('name')) + ' already exists')
 
@@ -98,11 +98,11 @@ class Field:
 
     def validating(self):
         if self.__dict__['name'] is None:
-            raise custom_exceptions.EmptyRequiredPropertyError('The field name is not defined')
+            raise custom_exceptions.PropertyError('The field name is not defined')
         if self.__getattribute__('name') in self.table.fields:
             raise custom_exceptions.UniqueViolationError('Field ' + str(self.__getattribute__('name')) + ' already exists')
         if self.__dict__['domain'] is None and self.__dict__['type'] is None:
-            raise custom_exceptions.EmptyRequiredPropertyError('Domain and type of field ' + str(self.__getattribute__('name')) + ' are not defined')
+            raise custom_exceptions.PropertyError('Domain and type of field ' + str(self.__getattribute__('name')) + ' are not defined')
         if self.__dict__['domain'] is not None and self.__getattribute__('domain') not in self.table.schema.domains:
             raise custom_exceptions.ReferenceError('Domain of field ' + str(self.__getattribute__('name')) + ' is not correct')
         if self.__dict__['type'] is not None and self.__getattribute__('type') not in self.table.schema.data_types:
@@ -129,7 +129,7 @@ class Constraint:
 
     def validating(self):
         if 'kind' not in self.__dict__:
-            raise custom_exceptions.EmptyRequiredPropertyError('Constraint type of the table is not defined')
+            raise custom_exceptions.PropertyError('Constraint type of the table is not defined')
         elif self.__getattribute__('kind') == 'PRIMARY' and any([key for key in self.table.constraints if key.__getattribute__('kind') == 'PRIMARY' and key != self]):
             raise custom_exceptions.UniqueViolationError('More than one primary key are defined')
         elif self.__getattribute__('kind') != 'FOREIGN' and (self.__dict__['reference'] is not None or self.__dict__['constraint'] is not None):
