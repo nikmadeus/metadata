@@ -53,4 +53,4 @@ def writexmlfile(schema, output):
     doc.appendChild(dbd_schema)
 
     # Выгрузка созданной dom-схемы в файл
-    doc.writexml(open(output, 'w', encoding='utf-8'), '', '  ', '\n', encoding='utf-8')
+    doc.writexml(open(output, 'w', encoding='utf-8'))
