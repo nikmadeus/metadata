@@ -2,28 +2,30 @@
 Модуль с классами представления базы в RAM.
 validating() - функция валидации(проверки на соответствие аттрибутов)
 """
-import custom_exceptions
 
 
-class Schema:
+class ShowException(Exception):
+    print(Exception)
+    pass
+
+
+class DatabaseSchema:
     def __init__(self):
-
         self.fulltext_engine = None
         self.version = None
         self.name = None
         self.description = None
 
-        self.domains = {}
-        self.tables = {}
+        self.domains = []
+        self.tables = []
 
     def validating(self):
         if self.__getattribute__('name') is None:
-            raise custom_exceptions.PropertyError('The schema name is not defined')
+            raise ShowException('The schema name is not defined')
 
 
 class Domain:
-    def __init__(self, schema):
-        self.schema = schema
+    def __init__(self):
 
         self.id = None
         self.name = None
@@ -45,115 +47,131 @@ class Domain:
 
     def validating(self):
         if self.__getattribute__('name') is None:
-            raise custom_exceptions.PropertyError('The domain name is not defined')
+            raise ShowException('The domain name is not defined')
         if self.__getattribute__('type') is None:
-            raise custom_exceptions.PropertyError('The domain type is not defined ' + str(self.__getattribute__('name')))
-        if self.__getattribute__('type') not in self.schema.data_types:
-            raise custom_exceptions.UnsupportedDataTypeError('Domain type is not correct ' + str(self.__getattribute__('name')))
-        if self.__getattribute__('name') in self.schema.domains.keys():
-            raise custom_exceptions.UniqueViolationError('Domain ' + str(self.__getattribute__('name')) + ' already exists')
+            raise ShowException('The domain type is not defined ' + str(self.__getattribute__('name')))
 
 
 class Table:
-    def __init__(self, schema):
-        self.schema = schema
+    def __init__(self):
 
-        self.name = None,
-        self.description = None,
-        self.add = None,
-        self.edit = None,
-        self.delete = None,
-        self.temporal_mode = None,
+        self.id = None
+        self.schema_id = None
+        self.name = None
+        self.description = None
+        self.can_add = None
+        self.can_edit = None
+        self.can_delete = None
+        self.temporal_mode = None
         self.means = None
+        self.uuid = None
 
-        self.fields = {}
-        self.indexes = []
+        self.fields = []
         self.constraints = []
+        self.indexes = []
 
     def validating(self):
         if self.__getattribute__('name') is None:
-            raise custom_exceptions.PropertyError('The table name is not defined')
+            raise ShowException('The table name is not defined')
         if self.__getattribute__('name') in self.schema.tables:
-            raise custom_exceptions.UniqueViolationError('Table ' + str(self.__getattribute__('name')) + ' already exists')
+            raise ShowException('Table ' + str(self.__getattribute__('name')) + ' already exists')
 
 
 class Field:
-    def __init__(self, table):
-        self.table = table
-        self.domain = None
+    def __init__(self):
 
+        self.id = None
+        self.table_id = None
+        self.position = None
         self.name = None
-        self.rname = None
-        self.domain = None
-        self.type = None
+        self.russian_short_name = None
         self.description = None
-        self.input = None
-        self.edit = None
+        self.domain_id = None
+        self.can_input = None
+        self.can_edit = None
         self.show_in_grid = None
         self.show_in_details = None
         self.is_mean = None
         self.autocalculated = None
         self.required = None
-
+        self.uuid = None
 
     def validating(self):
         if self.__dict__['name'] is None:
-            raise custom_exceptions.PropertyError('The field name is not defined')
+            raise ShowException('The field name is not defined')
         if self.__getattribute__('name') in self.table.fields:
-            raise custom_exceptions.UniqueViolationError('Field ' + str(self.__getattribute__('name')) + ' already exists')
+            raise ShowException('Field ' + str(self.__getattribute__('name')) + ' already exists')
         if self.__dict__['domain'] is None and self.__dict__['type'] is None:
-            raise custom_exceptions.PropertyError('Domain and type of field ' + str(self.__getattribute__('name')) + ' are not defined')
-        if self.__dict__['domain'] is not None and self.__getattribute__('domain') not in self.table.schema.domains:
-            raise custom_exceptions.ReferenceError('Domain of field ' + str(self.__getattribute__('name')) + ' is not correct')
-        if self.__dict__['type'] is not None and self.__getattribute__('type') not in self.table.schema.data_types:
-            raise custom_exceptions.ReferenceError('Type of field ' + str(self.__getattribute__('name')) + ' is not correct')
+            raise ShowException('Domain and type of field ' + str(self.__getattribute__('name')) + ' are not defined')
 
 
 class Constraint:
+    def __init__(self):
 
-    def __init__(self, table):
-        self.table = table
-
+        self.id = None
+        self.table_id = None
         self.name = None
-        self.kind = None
-        self.items = None
+        self.constraint_type = None
         self.reference = None
-        self.constraint = None
+        self.unique_key_id = None
         self.has_value_edit = None
         self.cascading_delete = None
-        self.full_cascading_delete = None
         self.expression = None
-
-        self.details = []
-        self.table.constraints.append(self)
+        self.uuid = None
 
     def validating(self):
-        if 'kind' not in self.__dict__:
-            raise custom_exceptions.PropertyError('Constraint type of the table is not defined')
-        elif self.__getattribute__('kind') == 'PRIMARY' and any([key for key in self.table.constraints if key.__getattribute__('kind') == 'PRIMARY' and key != self]):
-            raise custom_exceptions.UniqueViolationError('More than one primary key are defined')
-        elif self.__getattribute__('kind') != 'FOREIGN' and (self.__dict__['reference'] is not None or self.__dict__['constraint'] is not None):
-            raise custom_exceptions.ReferenceError('Constraint which is not an external key has the reference')
-        elif self.__dict__['reference'] is not None and not self.__getattribute__('reference') in self.table.schema.tables:
-            raise custom_exceptions.ReferenceError('Constraint has the reference to the nonexistent table')
+        if 'constraint_type' not in self.__dict__:
+            raise ShowException('Constraint type of the table is not defined')
+        elif self.__getattribute__('constraint_type') == 'PRIMARY' and any([key for key in self.table.constraints if
+                                                                            key.__getattribute__(
+                                                                                    'constraint_type') == 'PRIMARY' and key != self]):
+            raise ShowException('More than one primary key are defined')
+        elif self.__getattribute__('constraint_type') != 'FOREIGN' and (
+                        self.__dict__['reference'] is not None or self.__dict__['constraint'] is not None):
+            raise ShowException('Constraint which is not an external key has the reference')
         elif self.__dict__['items'] is not None and not self.__getattribute__('items') in self.table.fields:
-            raise custom_exceptions.ReferenceError('Constraint is set on the nonexistent field')
+            raise ShowException('Constraint is set on the nonexistent field')
+
+
+class ConstraintDetail:
+    def __init__(self):
+        self.id = None
+        self.constraint_id = None
+        self.position = None
+        self.field_id = None
+
+    def validating(self):
+        if not self.constraint_id or not self.field_id:
+            self.__dict__ = None
+            raise ShowException('')
 
 
 class Index:
-
-    def __init__(self, table):
-        self.table = table
-
+    def __init__(self):
+        self.id = None
+        self.table_id = None
         self.name = None
-        self.field = None
         self.local = None
-        self.uniqueness = None
-        self.fulltext = None
+        self.kind = None
+        self.uuid = None
 
-        self.details = []
-        self.table.indexes.append(self)
+        self.fields = []
 
     def validating(self):
         if self.__dict__['field'] is not None and self.__getattribute__('field') not in self.table.fields:
-            raise custom_exceptions.ReferenceError('The index refers to the nonexistent field')
+            raise ShowException('The index refers to the nonexistent field')
+
+
+class IndexDetail:
+    def __init__(self):
+        self.id = None
+        self.index_id = None
+        self.position = None
+        self.field_id = None
+        self.expression = None
+        self.descend = None
+
+    def validating(self):
+        if not self.index_id or not self.field_id:
+            self.__dict__ = None
+            raise ShowException('')
