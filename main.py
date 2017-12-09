@@ -1,35 +1,40 @@
 """
-XML => RAM AND RAM => XML => compare files
+XML => RAM AND RAM => XML
 """
+import argparse
+import os.path
+import xml.dom.minidom as md
+from schemautils import xmltoram, ramtoxml
 
-from schemautils.xmltoram import readxmlfile
-from schemautils.ramtoxml import writexmlfile
+# TODO: ARGPARSE
+from schemautils.postgresql_ddl import createPostgresqlDDL
 
+xml = md.parse("tasks.xml")
+xml = md.parse("prjadm.xml")
+xml.normalize()
 
-def comparing_files(sourcefile, resultfile):
-    with open(sourcefile, 'r', encoding='utf8') as sf, open(resultfile, 'r', encoding='utf8') as rf:
-        equal = True
-        for source_line in sf:
-            result_line = rf.readline()
-            if source_line.split() != result_line.split():
-                print('The match in the following lines is broken:')
-                print('Source line: ' + source_line)
-                print('Result line: ' + result_line)
-                equal = False
-        return equal
+if os.path.exists('tasks.xml') == False and os.path.exists('prjadm.xml') == False:
+    print("Error! Xml files does not exist!")
+    raise FileNotFoundError
+else:
+    schema = xmltoram(xml)
+    resxml = ramtoxml(schema)
+    print(resxml.toprettyxml())
 
+    postgresqlDDL = createPostgresqlDDL(schema)
+    print(postgresqlDDL)
 
-def run(inputfile, outputfile):  # inputfile - входной файл, преобразующийся во внутреннее представление в виде объектов
-    schemas = readxmlfile(inputfile)
-    for schema in schemas:
-        writexmlfile(schema, outputfile)
-    if comparing_files(inputfile, outputfile):
-        print('Files ' + inputfile + ' and ' + outputfile + ' are the same!')
-    else:
-        print('Files ' + inputfile + ' and ' + outputfile + ' are different!')
+    parser = argparse.ArgumentParser()
 
-
-if __name__ == "__main__":
-    file1 = 'C:\\Output\\tasks.xml'
-    file2 = 'C:\\Output\\taskscheck.xml'
-    run(file1, file2)  # передаем пути к 2 файлам в качестве параметров в функцию run()
+    parser.add_argument("-x2sq", "--xmltosqlite",
+                        help="filepath to db schema xml file that will be parse into sqlite database file "
+                             "(currently - into '.db' file) with same location and name", metavar='xml_path')
+    parser.add_argument("-sq2x", "--sqlitetoxml",
+                        help="filepath to db schema in sqlite db-file that will be parse into xml file",
+                        metavar='sqlite_db_to_xml_path')
+    parser.add_argument("-ms2ddl", "--mssqltoddl",
+                        help="ddl file path - Northwind db in MS SQL Server will be parse into this ddl file",
+                        metavar='ddl_file_path')
+    parser.add_argument("-ms2psql", "--mssqltopostgresql",
+                        help="password - for postgresql user, use transfer between MS Sql Server and PostgreSql ",
+                        metavar='pass')
