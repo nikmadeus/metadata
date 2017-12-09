@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="dbd_schema" type="dbd_schemaType"/>
+  <xs:complexType name="tablesType">
+    <xs:sequence>
+      <xs:element type="tableType" name="table" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="constraintType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="kind" use="optional"/>
+        <xs:attribute type="xs:string" name="items" use="optional"/>
+        <xs:attribute type="xs:string" name="reference" use="optional"/>
+        <xs:attribute type="xs:string" name="props" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="tableType">
+    <xs:sequence>
+      <xs:element type="fieldType" name="field" maxOccurs="unbounded" minOccurs="0"/>
+      <xs:element type="constraintType" name="constraint" maxOccurs="unbounded" minOccurs="0"/>
+      <xs:element type="indexType" name="index" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="name" use="optional"/>
+    <xs:attribute type="xs:string" name="description" use="optional"/>
+    <xs:attribute type="xs:string" name="ht_table_flags" use="optional"/>
+    <xs:attribute type="xs:string" name="access_level" use="optional"/>
+    <xs:attribute type="xs:string" name="props" use="optional"/>
+  </xs:complexType>
+  <xs:complexType name="indexType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="field" use="optional"/>
+        <xs:attribute type="xs:string" name="props" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="domainType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="name" use="optional"/>
+        <xs:attribute type="xs:string" name="type" use="optional"/>
+        <xs:attribute type="xs:string" name="align" use="optional"/>
+        <xs:attribute type="xs:string" name="width" use="optional"/>
+        <xs:attribute type="xs:string" name="props" use="optional"/>
+        <xs:attribute type="xs:string" name="char_length" use="optional"/>
+        <xs:attribute type="xs:string" name="description" use="optional"/>
+        <xs:attribute type="xs:string" name="length" use="optional"/>
+        <xs:attribute type="xs:string" name="precision" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+  <xs:complexType name="dbd_schemaType">
+    <xs:sequence>
+      <xs:element type="xs:string" name="custom"/>
+      <xs:element type="domainsType" name="domains"/>
+      <xs:element type="tablesType" name="tables"/>
+    </xs:sequence>
+    <xs:attribute type="xs:string" name="version"/>
+    <xs:attribute type="xs:string" name="name"/>
+    <xs:attribute type="xs:string" name="description"/>
+  </xs:complexType>
+  <xs:complexType name="domainsType">
+    <xs:sequence>
+      <xs:element type="domainType" name="domain" maxOccurs="unbounded" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+  <xs:complexType name="fieldType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute type="xs:string" name="name" use="optional"/>
+        <xs:attribute type="xs:string" name="rname" use="optional"/>
+        <xs:attribute type="xs:string" name="domain" use="optional"/>
+        <xs:attribute type="xs:string" name="props" use="optional"/>
+        <xs:attribute type="xs:string" name="description" use="optional"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+</xs:schema>
