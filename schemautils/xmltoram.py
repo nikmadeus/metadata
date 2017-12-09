@@ -1,116 +1,212 @@
-from metadata import Schema, Domain, Table, Field, Index, Constraint
-from xml.dom.minidom import parse
-import custom_exceptions
+from metadata import DatabaseSchema, Domain, Table, Field, Constraint, ConstraintDetail, Index, IndexDetail
 
 
-def readxmlfile(path):
-    dom = parse(path)
-    schemas = []
-    try:
-        for child in dom.childNodes:
-            schemas.append(parsing_schema(child))
-    except Exception as e:
-        print(str(e))
-    return schemas
+def xmltoram(xml):
+
+    schema = DatabaseSchema()
+
+    SchemaElement = xml.getElementsByTagName("dbd_schema")
+    for schema in SchemaElement:
+        schema.fulltext_engine = schema.getAttribute('fulltext_engine')
+        schema.version = schema.getAttribute('version')
+        schema.name = schema.getAttribute('name')
+        schema.description = schema.getAttribute('description')
+
+    schema.domains = createObjDomains(xml)
+    schema.tables = createObjTables(xml)
+
+    return schema
 
 
-def checking_node(node):
-    if node.nodeType == node.TEXT_NODE:
-        if node.nodeValue.strip() == '':
-            return True
-        else:
-            raise custom_exceptions.UnsupportedTagError('Node is not supported \"' + node.nodeValue + '\"')
+def createObjDomains(xml):
+
+    domains = []
+
+    DomainElement = xml.getElementsByTagName("domain")
+    for domain in DomainElement:
+        vardomain = Domain()
+        for attr in domain.attributes.keys():
+            if attr == "name":
+                vardomain.name = domain.getAttribute('name')
+            if attr == "type":
+                vardomain.type = domain.getAttribute('type')
+            if attr == "description":
+                vardomain.description = domain.getAttribute('description')
+            if attr == "data_type_id":
+                vardomain.data_type_id = domain.getAttribute('data_type_id')
+            if attr == "length":
+                vardomain.length = domain.getAttribute('length')
+            if attr == "char_length":
+                vardomain.char_length = domain.getAttribute('char_length')
+            if attr == "precision":
+                vardomain.precision = domain.getAttribute('precision')
+            if attr == "scale":
+                vardomain.scale = domain.getAttribute('scale')
+            if attr == "width":
+                vardomain.width = domain.getAttribute('width')
+            if attr == "align":
+                vardomain.align = domain.getAttribute('align')
+            if attr == "props":
+                for prop in domain.getAttribute('props').split(", "):
+                    if prop == "show_null":
+                        vardomain.show_null = True
+                    elif prop == "show_lead_nulls":
+                        vardomain.show_lead_nulls = True
+                    elif prop == "thousands_separator":
+                        vardomain.thousands_separator = True
+                    elif prop == "summable":
+                        vardomain.summable = True
+                    elif prop == "case_sensitive":
+                        vardomain.case_sensitive = True
+
+        # vardomain.validating()
+        domains.append(vardomain)
+
+    return domains
 
 
-def parsing_attributes(attr_dict, attributes):
-    for attr in attributes.keys():
-        if attr != 'props':
-            if attr not in attr_dict:
-                raise custom_exceptions.UnsupportedAttributeError('Attribute ' + attr + ' is not supported.')
-            else:
-                attr_dict[attr] = attributes.get(attr).value
-        else:
-            props = attributes.get(attr).value.split(', ')
-            for prop in props:
-                if prop not in attr_dict:
-                    raise custom_exceptions.UnsupportedAttributeError('Attribute ' + prop + ' is not supported.')
-                else:
-                    attr_dict[prop] = True
+def createObjTables(xml):
+
+    tables = []
+
+    TableElement = xml.getElementsByTagName("table")
+    for table in TableElement:
+        vartable = Table()
+        for attr in table.attributes.keys():
+            if attr == "name":
+                vartable.name = table.getAttribute('name')
+                if attr == "description":
+                    vartable.description = table.getAttribute('description')
+                if attr == "temporal_mode":
+                    vartable.temporal_mode = table.getAttribute('temporal_mode')
+                if attr == "means":
+                    vartable.means = table.getAttribute('means')
+                if attr == "props":
+                    for prop in table.getAttribute('props').split(", "):
+                        if prop == "add":
+                            vartable.can_add = True
+                        elif prop == "edit":
+                            vartable.can_edit = True
+                        elif prop == "delete":
+                            vartable.can_delete = True
+
+        vartable.fields = createObjFields(table)
+        vartable.indexes = createObjIndexes(table)
+        vartable.constraints = createObjConstraints(table)
+
+        # vartable.validating()
+        tables.append(vartable)
+
+    return tables
 
 
-def validating_schema(schema):
-    schema.validating()  # Валидация объекта схемы
-    for table in schema.tables.values():  # Валидация каждой из таблиц схемы
-        for constraint in table.constraints:  # Валидация каждого ограничения таблицы
-            constraint.validating()
-        for index in table.indexes:  # Валидация табличных индексов
-            index.validating()
+def createObjFields(xml):
+
+    # if xml.nodeName != "table":
+    #     raise TypeError("Element is not table")
+
+    fields = []
+
+    FieldElement = xml.getElementsByTagName("field")
+    for field in FieldElement:
+        varfield = Field()
+        for attr in field.attributes.keys():
+            if attr == "position":
+                varfield.position = field.getAttribute('position')
+            if attr == "name":
+                varfield.name = field.getAttribute('name')
+            if attr == "rname":
+                varfield.rname = field.getAttribute('rname')
+            if attr == "description":
+                varfield.description = field.getAttribute('description')
+            if attr == "domain":
+                varfield.domain = field.getAttribute('domain')
+            if attr == "props":
+                for prop in field.getAttribute('props').split(", "):
+                    if prop == "input":
+                        varfield.can_input = True
+                    elif prop == "edit":
+                        varfield.can_edit = True
+                    elif prop == "show_in_grid":
+                        varfield.show_in_grid = True
+                    elif prop == "show_in_details":
+                        varfield.show_in_details = True
+                    elif prop == "is_mean":
+                        varfield.is_mean = True
+                    elif prop == "autocalculated":
+                        varfield.autocalculated = True
+                    elif prop == "required":
+                        varfield.required = True
+
+        # varfield.validating()
+        fields.append(varfield)
+
+    return fields
 
 
-def parsing_schema(dom_schema):
-    try:
-        schema = Schema()
-        parsing_attributes(schema.attributes, dom_schema.attributes)
-    except custom_exceptions.UnsupportedAttributeError as ex:
-        raise Exception('Creating of schema is failed. ' + str(ex))
-    try:
-        for child in dom_schema.childNodes:
-            if checking_node(child):
-                continue
-            elif child.tagName == 'domains':
-                parsing_domain(schema, child)
-            elif child.tagName == 'tables':
-                parsing_table(schema, child)
-            elif child.tagName != 'custom':
-                raise custom_exceptions.UnsupportedTagError('Tag is not correct: ' + child.tagName)
-    except Exception as ex:
-        raise Exception('Schema ' + schema.__getattribute__('name') + ': ' + str(ex))
-    validating_schema(schema)
+def createObjConstraints(xml):
+
+    # if xml.nodeName != "table":
+    #     raise TypeError("Element is not table")
+
+    constraints = []
+
+    ConstraintElement = xml.getElementsByTagName("constraint")
+    for constraint in ConstraintElement:
+        varconstraint = Constraint()
+        for attr in constraint.attributes.keys():
+            if attr == "name":
+                varconstraint.name = constraint.getAttribute('name')
+            if attr == "constraint_type":
+                varconstraint.constraint_type = constraint.getAttribute('constraint_type')
+            if attr == "reference":
+                varconstraint.reference = constraint.getAttribute('reference')
+            if attr == "expression":
+                varconstraint.expression = constraint.getAttribute('expression')
+            if attr == "kind":
+                varconstraint.kind = constraint.getAttribute('kind')
+            if attr == "items":
+                varconstraint.items = constraint.getAttribute('items')
+            if attr == "props":
+                for prop in constraint.getAttribute('props').split(", "):
+                    if prop == "has_value_edit":
+                        varconstraint.has_value_edit = True
+                    elif prop == "cascading_delete":
+                        varconstraint.cascading_delete = True
+                    elif prop == "full_cascading_delete":
+                        varconstraint.cascading_delete = True
+
+        # varconstraint.validating()
+        constraints.append(varconstraint)
+
+    return constraints
 
 
-def parsing_domain(schema, dom):
-    domains = dom.childNodes
-    for domain_element in domains:
-        if checking_node(domain_element):
-            continue
-        elif domain_element.tagName != 'domain':
-            raise custom_exceptions.UnsupportedTagError('Tag is not correct: ' + domain_element.tagName)
-        domain = Domain(schema)
-        parsing_attributes(domain.attributes, domain_element.attributes)
-        domain.validating()
+def createObjIndexes(xml):
 
+    # if xml.nodeName != "table":
+    #     raise TypeError("Element is not table")
 
-def parsing_table(schema, dom):
-    tables = dom.childNodes
-    for table_element in tables:
-        if checking_node(table_element):
-            continue
-        elif table_element.tagName != 'table':
-            raise custom_exceptions.UnsupportedTagError('Tag is not correct: ' + table_element.tagName)
-        table = Table(schema)
-        parsing_attributes(table.attributes, table_element.attributes)
-        table.validating()
+    indexes = []
 
-        for child in table_element.childNodes:  # Для каждого элемента таблицы выполняется проверка
-            if checking_node(child):
-                continue
-            elif child.tagName == 'field':
-                field = Field(table)
-                parsing_attributes(field.attributes, child.attributes)
-                field.validating()
-            elif child.tagName == 'index':
-                parsing_index(table, child)
-            elif child.tagName == 'constraint':
-                parsing_constraint(table, child)
-            else:
-                raise custom_exceptions.UnsupportedTagError('Tag is not correct: ' + table_element.tagName)
+    IndexElement = xml.getElementsByTagName("index")
+    for index in IndexElement:
+        varindex = Index()
+        for attr in index.attributes.keys():
+            if attr == "name":
+                varindex.name = index.getAttribute('name')
+            if attr == "kind":
+                varindex.kind = index.getAttribute('kind')
+            if attr == "field":
+                varindex.field = index.getAttribute('field')
+            if attr == "props":
+                for prop in index.getAttribute('props').split(", "):
+                    if prop == "fulltext":
+                        varindex.fulltext = True
+                    elif prop == "uniqueness":
+                        varindex.uniqueness = True
 
+        # varindex.validating()
+        indexes.append(varindex)
 
-def parsing_index(table, index_element):
-    index = Index(table)
-    parsing_attributes(index.attributes, index_element.attributes)
-
-
-def parsing_constraint(table, constraint_element):
-    constraint = Constraint(table)
-    parsing_attributes(constraint.attributes, constraint_element.attributes)
+    return indexes
