@@ -1,12 +1,7 @@
 """
-Модуль с классами представления базы в RAM.
+Модуль с классами представления схемы базы в RAM.
 validating() - функция валидации(проверки на соответствие аттрибутов)
 """
-
-
-class ShowException(Exception):
-    print(Exception)
-    pass
 
 
 class DatabaseSchema:
@@ -19,9 +14,9 @@ class DatabaseSchema:
         self.domains = []
         self.tables = []
 
-    def validating(self):
-        if self.__getattribute__('name') is None:
-            raise ShowException('The schema name is not defined')
+    # def validating(self):
+    #     if self.__dict__['name'] is not None:
+    #         raise Exception('The schema name is not defined')
 
 
 class Domain:
@@ -29,8 +24,8 @@ class Domain:
 
         self.id = None
         self.name = None
-        self.description = None
         self.type = None
+        self.description = None
         self.data_type_id = None
         self.length = None
         self.char_length = None
@@ -38,18 +33,18 @@ class Domain:
         self.scale = None
         self.width = None
         self.align = None
-        self.show_null = None
-        self.show_lead_nulls = None
-        self.thousands_separator = None
-        self.summable = None
-        self.case_sensitive = None
+        self.show_null = False
+        self.show_lead_nulls = False
+        self.thousands_separator = False
+        self.summable = False
+        self.case_sensitive = False
         self.uuid = None
 
-    def validating(self):
-        if self.__getattribute__('name') is None:
-            raise ShowException('The domain name is not defined')
-        if self.__getattribute__('type') is None:
-            raise ShowException('The domain type is not defined ' + str(self.__getattribute__('name')))
+    # def validating(self):
+    #     if self.__dict__['name'] is not None:
+    #         raise Exception('The domain name is not defined')
+    #     if self.__dict__['type'] is not None:
+    #         raise Exception('The domain type is not defined ' + str(self.__getattribute__('name')))
 
 
 class Table:
@@ -59,9 +54,9 @@ class Table:
         self.schema_id = None
         self.name = None
         self.description = None
-        self.can_add = None
-        self.can_edit = None
-        self.can_delete = None
+        self.can_add = False
+        self.can_edit = False
+        self.can_delete = False
         self.temporal_mode = None
         self.means = None
         self.uuid = None
@@ -70,11 +65,9 @@ class Table:
         self.constraints = []
         self.indexes = []
 
-    def validating(self):
-        if self.__getattribute__('name') is None:
-            raise ShowException('The table name is not defined')
-        if self.__getattribute__('name') in self.schema.tables:
-            raise ShowException('Table ' + str(self.__getattribute__('name')) + ' already exists')
+    # def validating(self):
+    #     if self.__dict__['name'] is not None:
+    #         raise Exception('The table name is not defined')
 
 
 class Field:
@@ -87,129 +80,59 @@ class Field:
         self.russian_short_name = None
         self.description = None
         self.domain_id = None
-        self.can_input = None
-        self.can_edit = None
-        self.show_in_grid = None
-        self.show_in_details = None
-        self.is_mean = None
-        self.autocalculated = None
-        self.required = None
+        self.can_input = False
+        self.can_edit = False
+        self.show_in_grid = False
+        self.show_in_details = False
+        self.is_mean = False
+        self.autocalculated = False
+        self.required = False
         self.uuid = None
 
-    def validating(self):
-        if self.__dict__['name'] is None:
-            raise ShowException('The field name is not defined')
-        if self.__getattribute__('name') in self.table.fields:
-            raise ShowException('Field ' + str(self.__getattribute__('name')) + ' already exists')
-        if self.__dict__['domain'] is None and self.__dict__['type'] is None:
-            raise ShowException('Domain and type of field ' + str(self.__getattribute__('name')) + ' are not defined')
+    # def validating(self):
+    #     if self.__dict__['name'] is None:
+    #         raise Exception('The field name is not defined')
 
 
-# class Constraint:
-#     def __init__(self):
-#
-#         self.id = None
-#         self.table_id = None
-#         self.name = None
-#         self.constraint_type = None
-#         self.reference = None
-#         self.unique_key_id = None
-#         self.has_value_edit = None
-#         self.cascading_delete = None
-#         self.expression = None
-#         self.uuid = None
-#
-#     def validating(self):
-#         if 'constraint_type' not in self.__dict__:
-#             raise ShowException('Constraint type of the table is not defined')
-#         elif self.__getattribute__('constraint_type') == 'PRIMARY' and any([key for key in self.table.constraints if key.__getattribute__('constraint_type') == 'PRIMARY' and key != self]):
-#             raise ShowException('More than one primary key are defined')
-#         elif self.__getattribute__('constraint_type') != 'FOREIGN' and (self.__dict__['reference'] is not None or self.__dict__['constraint'] is not None):
-#             raise ShowException('Constraint which is not an external key has the reference')
-#         elif self.__dict__['items'] is not None and not self.__getattribute__('items') in self.table.fields:
-#             raise ShowException('Constraint is set on the nonexistent field')
+class Constraint:
+    def __init__(self):
+
+        self.id = None
+        self.table_id = None
+        self.name = None
+        self.constraint_type = None
+        self.reference = None
+        self.unique_key_id = None
+        self.has_value_edit = False
+        self.cascading_delete = False
+        self.expression = None
+        self.uuid = None
+
+    # def validating(self):
+    #     if self.__dict__['constraint_type'] is not None:
+    #         raise Exception('Constraint type is not defined')
+    #     elif self.__getattribute__('constraint_type') != 'FOREIGN' and self.__dict__['reference'] is not None:
+    #         raise Exception('Constraint which is not an external key has the reference')
 
 
-class PrimaryConstraint:
-    const_type = "PRIMARY"
+class ConstraintDetail:
 
-    def __init__(self, item_i=None, name_i=None):
-        if type(item_i) == str:
-            self.item_name = item_i
-            self.item = None
-        else:
-            if type(item_i) == Field:
-                self.item_name = item_i.name
-                self.item = item_i
-            else:
-                self.item_name = None
-                self.item = None
-        self.name = name_i
+    def __init__(self):
 
-
-class ForeignConstraint:
-    const_type = "FOREIGN"
-
-    def __init__(self, item_i=None, ref_item=None, props_i="", name_i=None):
-        if type(item_i) == str:
-            self.item_name = item_i
-            self.item = None
-        else:
-            if type(item_i) == Field:
-                self.item_name = item_i.name
-                self.item = item_i
-            else:
-                self.item_name = None
-                self.item = None
-        if type(ref_item) == str:
-            self.ref_name = ref_item
-            self.reference = None
-        else:
-            if type(ref_item) == Table:
-                self.ref_name = ref_item.name
-                self.reference = ref_item
-            else:
-                self.ref_name = None
-                self.ref_item = None
-        self.props = props_i
-        self.name = name_i
-
+        self.id = None
+        self.constraint_id = None
         self.position = None
+        self.field_id = None
 
-
-class CheckConstraint:
-    const_type = "CHECK"
-
-    def __init__(self, expression_i="", field_item=None, name_i=None):
-        self.expression = expression_i
-        self.name = name_i
-        if field_item.__class__ == Field:
-            self.item = field_item
-            self.item_name = field_item.name
-        else:
-            if field_item.__class__ == str:
-                self.item = None
-                self.item_name = field_item
-            else:
-                self.item = None
-                self.item_name = None
-
-
-# class ConstraintDetail:
-#     def __init__(self):
-#         self.id = None
-#         self.constraint_id = None
-#         self.position = None
-#         self.field_id = None
-#
-#     def validating(self):
-#         if not self.constraint_id or not self.field_id:
-#             self.__dict__ = None
-#             raise ShowException('')
+    def validating(self):
+        if not self.constraint_id or not self.field_id:
+            self.__dict__ = None
+            raise Exception('Attributes constraind_id and field_id are not found')
 
 
 class Index:
     def __init__(self):
+
         self.id = None
         self.table_id = None
         self.name = None
@@ -219,21 +142,23 @@ class Index:
 
         self.fields = []
 
+    # def validating(self):
+    #     if self.__dict__['name'] is not None:
+    #         raise Exception('Index name is not defined')
+
+
+class IndexDetail:
+
+    def __init__(self):
+
+        self.id = None
+        self.index_id = None
+        self.position = None
+        self.field_id = None
+        self.expression = None
+        self.descend = None
+
     def validating(self):
-        if self.__dict__['field'] is not None and self.__getattribute__('field') not in self.table.fields:
-            raise ShowException('The index refers to the nonexistent field')
-
-
-# class IndexDetail:
-#     def __init__(self):
-#         self.id = None
-#         self.index_id = None
-#         self.position = None
-#         self.field_id = None
-#         self.expression = None
-#         self.descend = None
-#
-#     def validating(self):
-#         if not self.index_id or not self.field_id:
-#             self.__dict__ = None
-#             raise ShowException('')
+        if not self.index_id or not self.field_id:
+            self.__dict__ = None
+            raise Exception('Attributes index_id and field_id are not found')
