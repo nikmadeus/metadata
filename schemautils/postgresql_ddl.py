@@ -1,33 +1,38 @@
-import pypyodbc
 import psycopg2
 
+psql_user = "admin",
+psql_password = 'password'
 
-def createPostgresqlDDL(schema):
-    result = ""
-    result += createSchema(schema)
+try:
+    cursor = psycopg2.connect("dbname='postgres' user='{0}' password='{1}'".format(psql_user, psql_password)).cursor()
+except psycopg2.Error as err:
+    print("Connection error: {}".format(err))
 
-    result += "\n".join(map(createDomain, schema.domains))
 
-    result += "\n".join(map(createTable, schema.tables))
+# Generation DDL instructions
+def genPSDDL(schema):
+
+    result = "CREATE SCHEMA {name}".format(name=schema.name)
+    result += "\n".join(map(genDomain, schema.domains))
+    result += "\n".join(map(genTable, schema.tables))
 
     return result
 
 
-def createSchema(schema):
-    return "CREATE SCHEMA {name}".format(name=schema.name)
+def genDomain(domain):
 
-
-def createDomain(domain):
-    return """CREATE DOMAIN {domain_name} AS [{type_}]""".format(
+    return """CREATE DOMAIN {domain_name} AS [{type}]""".format(
         domain_name=domain.name,
-        type_=domain.type
+        type=domain.type
     )
 
 
-def createTable(table):
-    fields = ",\n".join(map(createField, table.fields))
-    indeces = "\n".join(map(lambda i: createIndex(i, table.name), table.indexes))
-    constraints = "\n".join(map(lambda c: createConstraint(c, table.name), table.constraints))
+def genTable(table):
+
+    fields = "\n".join(map(genField, table.fields))
+    indeces = "\n".join(map(lambda i: genIndex(i, table.name), table.indexes))
+    constraints = "\n".join(map(lambda c: genConstraint(c, table.name), table.constraints))
+
     return """CREATE TABLE {table_name}(\n{fields})\n{indeces}\n{constraints}""".format(
         table_name=table.name,
         fields=fields,
@@ -36,26 +41,28 @@ def createTable(table):
     )
 
 
-def createField(field):
-    pass
-    return "{name} {type_}".format(
+def genField(field):
+
+    return "{name} {type}".format(
         name=field.name,
-        type_=field.domain
+        type=field.domain
     )
 
 
-def createIndex(index, tableName):
-    return """CREATE INDEX {name} ON {tableName} ({field})""".format(
-        name=index.name,
-        tableName=tableName,
-        field=index.fields
-    )
+def genConstraint(constraint, tableName):
 
-
-def createConstraint(constraint, tableName):
     return """ALTER TABLE {tableName} ADD CONSTRAINT {name} {kind} ({items})""".format(
         tableName=tableName,
         name=constraint.name,
         kind=constraint.kind,
         items=constraint.items
+    )
+
+
+def genIndex(index, tableName):
+
+    return """CREATE INDEX {name} ON {tableName} ({field})""".format(
+        name=index.name,
+        tableName=tableName,
+        field=index.fields
     )
