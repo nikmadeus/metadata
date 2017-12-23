@@ -1,11 +1,11 @@
 """
-Модуль с классами представления схемы базы в RAM.
-validating() - функция валидации(проверки на соответствие аттрибутов)
+The program module with classes for representation of subjects of the scheme in RAM representation
 """
 
 
 class DatabaseSchema:
     def __init__(self):
+        self.id = None
         self.fulltext_engine = None
         self.version = None
         self.name = None
@@ -13,10 +13,6 @@ class DatabaseSchema:
 
         self.domains = []
         self.tables = []
-
-    # def validating(self):
-    #     if self.__dict__['name'] is not None:
-    #         raise Exception('The schema name is not defined')
 
 
 class Domain:
@@ -40,12 +36,6 @@ class Domain:
         self.case_sensitive = False
         self.uuid = None
 
-    # def validating(self):
-    #     if self.__dict__['name'] is not None:
-    #         raise Exception('The domain name is not defined')
-    #     if self.__dict__['type'] is not None:
-    #         raise Exception('The domain type is not defined ' + str(self.__getattribute__('name')))
-
 
 class Table:
     def __init__(self):
@@ -65,10 +55,6 @@ class Table:
         self.constraints = []
         self.indexes = []
 
-    # def validating(self):
-    #     if self.__dict__['name'] is not None:
-    #         raise Exception('The table name is not defined')
-
 
 class Field:
     def __init__(self):
@@ -77,9 +63,9 @@ class Field:
         self.table_id = None
         self.position = None
         self.name = None
-        self.russian_short_name = None
+        self.rname = None
         self.description = None
-        self.domain_id = None
+        self.domain = None
         self.can_input = False
         self.can_edit = False
         self.show_in_grid = False
@@ -88,10 +74,6 @@ class Field:
         self.autocalculated = False
         self.required = False
         self.uuid = None
-
-    # def validating(self):
-    #     if self.__dict__['name'] is None:
-    #         raise Exception('The field name is not defined')
 
 
 class Constraint:
@@ -105,14 +87,9 @@ class Constraint:
         self.unique_key_id = None
         self.has_value_edit = False
         self.cascading_delete = False
+        self.full_cascading_delete = False
         self.expression = None
         self.uuid = None
-
-    # def validating(self):
-    #     if self.__dict__['constraint_type'] is not None:
-    #         raise Exception('Constraint type is not defined')
-    #     elif self.__getattribute__('constraint_type') != 'FOREIGN' and self.__dict__['reference'] is not None:
-    #         raise Exception('Constraint which is not an external key has the reference')
 
 
 class ConstraintDetail:
@@ -124,11 +101,6 @@ class ConstraintDetail:
         self.position = None
         self.field_id = None
 
-    def validating(self):
-        if not self.constraint_id or not self.field_id:
-            self.__dict__ = None
-            raise Exception('Attributes constraind_id and field_id are not found')
-
 
 class Index:
     def __init__(self):
@@ -139,12 +111,10 @@ class Index:
         self.local = None
         self.kind = None
         self.uuid = None
+        self.fulltext = False
+        self.uniqueness = False
 
         self.fields = []
-
-    # def validating(self):
-    #     if self.__dict__['name'] is not None:
-    #         raise Exception('Index name is not defined')
 
 
 class IndexDetail:
@@ -157,8 +127,3 @@ class IndexDetail:
         self.field_id = None
         self.expression = None
         self.descend = None
-
-    def validating(self):
-        if not self.index_id or not self.field_id:
-            self.__dict__ = None
-            raise Exception('Attributes index_id and field_id are not found')
