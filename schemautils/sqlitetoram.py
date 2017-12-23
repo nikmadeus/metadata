@@ -1,24 +1,26 @@
-from metadata import DatabaseSchema, Domain, Table, Field, Constraint, ConstraintDetail, Index, IndexDetail
+from metadata import DatabaseSchema, Domain, Table, Field, Constraint, Index
 import sqlite3
 
 
 def sqlitetoram(sqlitefile):
-
-    # Set connection with SQLite database
+    # Установка соединения с SQLite базой
     connect = sqlite3.connect(sqlitefile)
     cursor = connect.cursor()
-    print(sqlite3.version)
-    print("Database opened succesfully!")
+    print("sqlite version: ", sqlite3.version)
+    print("Database ", sqlitefile, " opened succesfully!")
 
     # Schema
-    schema_query = cursor.execute("""select name from dbd$schemas""")
+    schema_query = cursor.execute("""select dbd$schemas.id, dbd$schemas.name from dbd$schemas""").fetchone()
 
     schema = DatabaseSchema()
-    # schema.name = schema_query[1]
+    if schema_query[0] is not None:
+        schema.id = schema_query[0]
+    if schema_query[1] is not None:
+        schema.name = schema_query[1]
 
     # Domains
     domains_query = cursor.execute("""
-                                     select
+                                   select
                                      dbd$domains.id,
                                      dbd$domains.name,
                                      dbd$domains.description,
@@ -33,7 +35,7 @@ def sqlitetoram(sqlitefile):
                                      dbd$domains.show_lead_nulls,
                                      dbd$domains.thousands_separator,
                                      dbd$domains.summable,
-                                     dbd$domains.case_sensitive "case_sensitive",
+                                     dbd$domains.case_sensitive,
                                      dbd$domains.uuid
                                    from dbd$domains
                                      inner join dbd$data_types on dbd$domains.data_type_id = dbd$data_types.id
@@ -43,6 +45,8 @@ def sqlitetoram(sqlitefile):
 
         domain = Domain()
 
+        if domain_row[0] is not None:
+            domain.id = domain_row[0]
         if domain_row[1] is not None:
             domain.name = domain_row[1]
         if domain_row[2] is not None:
@@ -64,15 +68,15 @@ def sqlitetoram(sqlitefile):
 
         props = []
 
-        if (domain_row[10] is not None) and (domain_row[10] == 1):
+        if domain_row[10] == 1:
             props.append("show_null")
-        if (domain_row[11] is not None) and (domain_row[11] == 1):
+        if domain_row[11] == 1:
             props.append("show_lead_nulls")
-        if (domain_row[12] is not None) and (domain_row[12] == 1):
+        if domain_row[12] == 1:
             props.append("thousands_separator")
-        if (domain_row[13] is not None) and (domain_row[13] == 1):
+        if domain_row[13] == 1:
             props.append("summable")
-        if (domain_row[14] is not None) and (domain_row[14] == 1):
+        if domain_row[14] == 1:
             props.append("case_sensitive")
         domain.props = ", ".join(props)
 
@@ -82,11 +86,12 @@ def sqlitetoram(sqlitefile):
         if domain_row[1] is not None:
             schema.domains.append(domain)
 
+    # Tables
     tables_query = cursor.execute("""
                                   select
                                     dbd$tables.id,
-                                    dbd$schemas.name "schema_name",
-                                    dbd$tables.name "table_name",
+                                    dbd$schemas.name,
+                                    dbd$tables.name,
                                     dbd$tables.description,
                                     dbd$tables.means,
                                     dbd$tables.can_add,
@@ -108,11 +113,11 @@ def sqlitetoram(sqlitefile):
 
         props = []
 
-        if (table_row[5] is not None) and (table_row[5] == 1):
+        if table_row[5] == 1:
             props.append("add")
-        if (table_row[6] is not None) and (table_row[6] == 1):
+        if table_row[6] == 1:
             props.append("edit")
-        if (table_row[7] is not None) and (table_row[7] == 1):
+        if table_row[7] == 1:
             props.append("delete")
         table.props = ", ".join(props)
 
@@ -122,25 +127,27 @@ def sqlitetoram(sqlitefile):
         if table_row[2] is not None:
             schema.tables.append(table)
 
+    # Fields
     fields_query = cursor.execute("""
-                                                      select
-                                                        dbd$fields.id,
-                                                        dbd$fields.table_id,
-                                                        dbd$fields.position,
-                                                        dbd$fields.name,
-                                                        dbd$fields.russian_short_name,
-                                                        dbd$fields.description,
-                                                        dbd$fields.domain_id,
-                                                        dbd$fields.can_input,
-                                                        dbd$fields.can_edit,
-                                                        dbd$fields.show_in_grid,
-                                                        dbd$fields.show_in_details,
-                                                        dbd$fields.is_mean,
-                                                        dbd$fields.autocalculated,
-                                                        dbd$fields.required
-                                                      from dbd$fields
-                                                      order by dbd$fields.table_id, dbd$fields.position
-                                                      """).fetchall()
+                                  select
+                                    dbd$fields.id,
+                                    dbd$fields.table_id,
+                                    dbd$fields.position,
+                                    dbd$fields.name,
+                                    dbd$fields.russian_short_name,
+                                    dbd$fields.description,
+                                    dbd$fields.domain_id,
+                                    dbd$fields.can_input,
+                                    dbd$fields.can_edit,
+                                    dbd$fields.show_in_grid,
+                                    dbd$fields.show_in_details,
+                                    dbd$fields.is_mean,
+                                    dbd$fields.autocalculated,
+                                    dbd$fields.required,
+                                    dbd$fields.uuid
+                                  from dbd$fields
+                                  order by dbd$fields.table_id, dbd$fields.position
+                                  """).fetchall()
     for field_row in fields_query:
 
         field = Field()
@@ -148,25 +155,109 @@ def sqlitetoram(sqlitefile):
         field.name = field_row[3]
         field.rname = field_row[4]
         field.description = field_row[5]
+        field.domain = field_row[6]
 
         props = []
 
-        if (field_row[7] is not None) and (field_row[7] == 1):
+        if field_row[7] == 1:
             props.append("input")
-        if (field_row[8] is not None) and (field_row[8] == 1):
+        if field_row[8] == 1:
             props.append("edit")
-        if (field_row[9] is not None) and (field_row[9] == 1):
+        if field_row[9] == 1:
             props.append("show_in_grid")
-        if (field_row[10] is not None) and (field_row[10] == 1):
+        if field_row[10] == 1:
             props.append("show_in_details")
-        if (field_row[11] is not None) and (field_row[11] == 1):
+        if field_row[11] == 1:
             props.append("is_mean")
-        if (field_row[12] is not None) and (field_row[12] == 1):
+        if field_row[12] == 1:
             props.append("autocalculated")
-        if (field_row[13] is not None) and (field_row[13] == 1):
+        if field_row[13] == 1:
             props.append("required")
         field.props = ", ".join(props)
 
         field.uuid = field_row[14]
+
+    # Constraints
+    constraints_query = cursor.execute("""
+                                      select
+                                        constraints_t.id "constraint_id",
+                                        constraints_t.name,
+                                        constraints_t.constraint_type "constraint_type",
+                                        dbd$constraint_details.position "position",
+                                        dbd$tables.id "table_id",
+                                        dbd$fields.id "field_id",
+                                        dbd$fields.name "field_name",
+                                        const_ref.table_id "ref_table_id",
+                                        constraints_t.has_value_edit,
+                                        constraints_t.cascading_delete,
+                                        constraints_t.expression
+                                      from
+                                        dbd$constraints constraints_t
+                                        left join dbd$constraint_details
+                                          on dbd$constraint_details.constraint_id = constraints_t.id
+                                        inner join dbd$tables
+                                          on constraints_t.table_id = dbd$tables.id
+                                        left join dbd$fields
+                                          on dbd$constraint_details.field_id=dbd$fields.id
+                                        left join dbd$constraints const_ref
+                                          on constraints_t.unique_key_id = const_ref.id
+                                      order by
+                                        table_id, position
+                                      """).fetchall()
+    for constraint_row in constraints_query:
+
+        constraint = Constraint()
+
+        constraint.name = constraint_row[2]
+        constraint.constraint_type = constraint_row[3]
+        constraint.reference = constraint_row[4]
+        constraint.unique_key_id = constraint_row[5]
+
+        props = []
+
+        if constraint_row[6] == 1:
+            props.append("has_value_edit")
+        if constraint_row[7] == 1:
+            props.append("cascading_delete")
+        if props:
+            constraint.props = ", ".join(props)
+
+        constraint.expression = constraint_row[8]
+        constraint.uuid = constraint_row[9]
+
+    # Indexes
+    index_query = cursor.execute("""
+                                   select
+                                     dbd$indices.id,
+                                     dbd$indices.name,
+                                     dbd$indices.table_id,
+                                     dbd$index_details.position,
+                                     dbd$index_details.field_id,
+                                     dbd$fields.name,
+                                     dbd$indices.kind,
+                                     dbd$indices.local,
+                                     dbd$index_details.descend,
+                                     dbd$index_details.expression
+                                   from
+                                     dbd$indices
+                                     inner join dbd$index_details
+                                       on dbd$index_details.index_id = dbd$indices.id
+                                     inner join dbd$tables
+                                       on dbd$indices.table_id = dbd$tables.id
+                                     left join dbd$fields
+                                       on dbd$index_details.field_id = dbd$fields.id
+                                   order by
+                                     dbd$tables.name, dbd$index_details.position
+                                   """).fetchall()
+    for index_row in index_query:
+        index = Index()
+        props = []
+        index.name = index_row[2]
+        index.local = index_row[3]
+        index.kind = index_row[4]
+        index.field = index_row[4]
+        index.uuid = index_row[5]
+        if props:
+            index.props = ", ".join(props)
 
     return schema
