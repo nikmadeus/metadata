@@ -1,16 +1,39 @@
 import psycopg2
 
-psql_user = "admin",
-psql_password = 'password'
+database_name = "Northwind"
+psql_user = "postgres",
+psql_password = 'root'
 
 try:
     cursor = psycopg2.connect("dbname='postgres' user='{0}' password='{1}'".format(psql_user, psql_password)).cursor()
+    cursor.execute('SELECT version()')
+    print(cursor.fetchone())
+
+    cursor.execute("DROP DATABASE IF EXISTS '{0}'".format(database_name))
+    cursor.execute("Create DATABASE IF NOT EXISTS '{0}'".format(database_name))
+
 except psycopg2.Error as err:
     print("Connection error: {}".format(err))
 
 
+@staticmethod
+def get_param(count):
+    ret = "%s," * count
+    return ret[:-1]
+
+
+def transfer_table(table):
+    # table_name = table.name
+    # fields = [field.name for field in table.fields]
+    # param = get_param(len(fields))
+    # fields = ", ".join(fields)
+    pass
+
 # Generation DDL instructions
 def genPSDDL(schema):
+
+    # for table in schema.tables:
+    #     transfer_table(table.name)
 
     result = "CREATE SCHEMA {name}".format(name=schema.name)
     result += "\n".join(map(genDomain, schema.domains))
