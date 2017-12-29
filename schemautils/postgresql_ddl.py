@@ -1,52 +1,23 @@
-import psycopg2
-
-database_name = "Northwind"
-psql_user = "postgres",
-psql_password = 'root'
-
-try:
-    cursor = psycopg2.connect("dbname='postgres' user='{0}' password='{1}'".format(psql_user, psql_password)).cursor()
-    cursor.execute('SELECT version()')
-    print(cursor.fetchone())
-
-    cursor.execute("DROP DATABASE IF EXISTS '{0}'".format(database_name))
-    cursor.execute("Create DATABASE IF NOT EXISTS '{0}'".format(database_name))
-
-except psycopg2.Error as err:
-    print("Connection error: {}".format(err))
-
-
-@staticmethod
-def get_param(count):
-    ret = "%s," * count
-    return ret[:-1]
-
-
-def transfer_table(table):
-    # table_name = table.name
-    # fields = [field.name for field in table.fields]
-    # param = get_param(len(fields))
-    # fields = ", ".join(fields)
-    pass
-
 # Generation DDL instructions
-def genPSDDL(schema):
+def genPSDDL(ddl_path, schema):
 
-    # for table in schema.tables:
-    #     transfer_table(table.name)
-
-    result = "CREATE SCHEMA {name}".format(name=schema.name)
+    result = "CREATE SCHEMA {0}".format(schema.name)
     result += "\n".join(map(genDomain, schema.domains))
     result += "\n".join(map(genTable, schema.tables))
+
+    if ddl_path:
+        with open(ddl_path, 'w', encoding='utf-8') as file:
+            file.write(result)
+    return result
 
     return result
 
 
 def genDomain(domain):
 
-    return """CREATE DOMAIN {domain_name} AS [{type}]""".format(
-        domain_name=domain.name,
-        type=domain.type
+    return """CREATE DOMAIN {0} AS [{1}]""".format(
+        domain.name,
+        domain.type
     )
 
 
@@ -54,38 +25,52 @@ def genTable(table):
 
     fields = "\n".join(map(genField, table.fields))
     indeces = "\n".join(map(lambda i: genIndex(i, table.name), table.indexes))
-    constraints = "\n".join(map(lambda c: genConstraint(c, table.name), table.constraints))
+    forconstraints = map(lambda c: genForConstraint(table.name, c),
+                      filter(lambda c: c.kind == "FOREIGN", table.constraints))
+    checkconstraints = map(lambda c: genCheckConstraint(table.name, c),
+                         filter(lambda c: c.kind == "CHECK", table.constraints))
 
-    return """CREATE TABLE {table_name}(\n{fields})\n{indeces}\n{constraints}""".format(
-        table_name=table.name,
-        fields=fields,
-        indeces=indeces,
-        constraints=constraints
+    return """CREATE TABLE {0}(\n{1})\n{2}\n{3}\n{4}""".format(
+        table.name,
+        fields,
+        indeces,
+        forconstraints,
+        checkconstraints
     )
 
 
 def genField(field):
 
-    return "{name} {type}".format(
-        name=field.name,
-        type=field.domain
+    return "{0} {1}".format(
+        field.name,
+        field.domain
     )
 
 
-def genConstraint(constraint, tableName):
+def genForConstraint(constraint, tableName):
 
-    return """ALTER TABLE {tableName} ADD CONSTRAINT {name} {kind} ({items})""".format(
-        tableName=tableName,
-        name=constraint.name,
-        kind=constraint.kind,
-        items=constraint.items
+    return """ALTER TABLE {0} ADD FOREIGN KEY ({1}) REFERENCES {2} {3};\n""".format(
+        tableName,
+        constraint.name,
+        constraint.reference,
+        constraint.items
+    )
+
+
+def genCheckConstraint(constraint, tableName):
+
+    return "ALTER TABLE {0} ADD CHECK {1} {2};\n".format(
+        tableName,
+        constraint.expression,
+        constraint.items
     )
 
 
 def genIndex(index, tableName):
 
-    return """CREATE INDEX {name} ON {tableName} ({field})""".format(
-        name=index.name,
-        tableName=tableName,
-        field=index.fields
+    return """CREATE {0} {1} ON {2} ({3})""".format(
+        "UNIQUE" if index.uniqueness else "",
+        "INDEX" + index.name if index.name is not None else "INDEX",
+        tableName,
+        index.fields[0]
     )
