@@ -1,5 +1,5 @@
-from metadata import *
 import pymssql
+from additionalfiles.metadata import *
 
 
 def mssqltoram():
@@ -68,7 +68,7 @@ def create_fields(connect, table):
         domain.char_length = row[2]
         domain.type = row[1]
         field.domain = domain
-        table.append_field(field)
+        table.fields.append(field)
         row = cursor.fetchone()
 
     cursor.close()
@@ -97,9 +97,9 @@ def create_constraints(connect, schema, table):
     row = cursor.fetchone()
     while row is not None:
         constraint = Constraint()  # PRIMARY
-        constraint.item = table.fields_map[row[1]]
+        constraint.item = table.fields[row[1]]
         constraint.item_name = row[1]
-        table.append_constraint(constraint)
+        table.constraints.append(constraint)
         row = cursor.fetchone()
 
     tables_map = {}
@@ -118,7 +118,7 @@ def create_constraints(connect, schema, table):
     row = cursor.fetchone()
     while row is not None:
         constraint = Constraint()  # FOREIGN
-        constraint.item = table.fields_map[row[0]]
+        constraint.item = table.fields[row[0]]
         constraint.item_name = row[0]
         constraint.reference = tables_map[row[1]]
         constraint.ref_name = row[1]
@@ -127,7 +127,7 @@ def create_constraints(connect, schema, table):
         if constraint.item_name == '':
             raise Exception('Значения элементов пусты!')
 
-        table.append_constraint(constraint)
+        table.constraints.append(constraint)
         row = cursor.fetchone()
 
 
@@ -155,7 +155,7 @@ def create_index(connect, schema, table):
     row = cur.fetchone()
     while row is not None:
         index = Index()
-        index.field_name = row[0]
+        index.field.name = row[0]
         index.field = tables_map[row[0]]
-        table.append_index(index)
+        table.indexes.append(index)
         row = cur.fetchone()
